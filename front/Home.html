@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC&display=swap" rel="stylesheet">
+    <!-- <link rel="stylesheet" href="gome_style.css"> -->
+    <meta charset="UTF-8" />
+    <title>我的待辦事項系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="lxgw-wenkai-tc-regular min-h-screen flex items-center justify-center bg-gray-200 p-4">
+    <div class="main_box mt-10 mx-auto w-full max-w-md bg-white rounded-2xl p-8 shadow-lg flex flex-col items-center">
+      <h1 class="text-center text-3xl font-bold mb-2">代辦事項</h1>
+      <hr class="w-full border-gray-300 my-4">
+      <div class="add_todo flex flex-col items-center gap-4 w-full">
+        <form action="POST" class="flex flex-col items-center gap-4 w-full">
+          <div class="w-full">
+            <label class="block text-lg mb-0.5 text-gray-700">名稱</label>
+            <input type="text" name="named" placeholder="請輸入名稱" class="w-full border-none bg-blue-50 rounded-lg py-2 px-4 text-base focus:outline-none focus:bg-blue-100 focus:shadow-md transition duration-200 ease-in-out hover:bg-blue-100">
+          </div>
+          <div class="w-full">
+            <label class="block text-lg mb-0.5 text-gray-700">狀態</label>
+            <select name="state" class="w-full border-none bg-blue-50 rounded-lg py-2 px-4 text-base focus:outline-none focus:bg-blue-100 focus:shadow-md transition duration-200 ease-in-out hover:bg-blue-100">
+              <option value="true">已完成</option>
+              <option value="false">未完成</option>
+            </select>
+          </div>
+          <div class="w-full">
+            <label class="block text-lg mb-0.5 text-gray-700">備註</label>
+            <input type="text" placeholder="無者可留空" class="w-full border-none bg-blue-50 rounded-lg py-2 px-4 text-base focus:outline-none focus:bg-blue-100 focus:shadow-md transition duration-200 ease-in-out hover:bg-blue-100">
+          </div>
+          <div class="w-full">
+            <label class="block text-lg mb-0.5 text-gray-700">優先度</label>
+            <input type="number" name="priority" value="1" min="1" class="w-full border-none bg-blue-50 rounded-lg py-2 px-4 text-base focus:outline-none focus:bg-blue-100 focus:shadow-md transition duration-200 ease-in-out hover:bg-blue-100">
+          </div>
+          <button type="submit" class="w-full border-none rounded-lg py-2 px-6 bg-blue-500 text-white text-lg font-bold cursor-pointer mt-2 shadow-md hover:bg-blue-600 hover:shadow-lg transition duration-200 ease-in-out flex items-center justify-center">送出</button>
+        </form>
+      </div>
+      <hr class="w-full border-gray-300 my-4">
+      <div class="show_case w-full mt-6 flex flex-col items-center">
+        <div name="done" class="w-full bg-blue-50 rounded-xl p-4 shadow-md mb-4">
+          <h3 class="text-center text-xl font-semibold text-blue-700 mb-3">已完成事項</h3>
+          <div id="done-list"></div>
+        </div>
+        <div name="undone" class="w-full bg-yellow-50 rounded-xl p-4 shadow-md mb-4">
+          <h3 class="text-center text-xl font-semibold text-orange-600 mb-3">未完成事項</h3>
+          <div id="undone-list"></div>
+        </div>
+      </div>
+    </div>
+    <script>
+const apiBase = 'http://127.0.0.1:8000';
+const doneList = document.getElementById('done-list');
+const undoneList = document.getElementById('undone-list');
+const form = document.querySelector('.add_todo form');
+
+let editingId = null;
+
+function renderTodos(todos) {
+  doneList.innerHTML = '';
+  undoneList.innerHTML = '';
+  todos.forEach((todo, idx) => {
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'todo-item';
+    itemDiv.style.display = 'flex';
+    itemDiv.style.justifyContent = 'space-between';
+    itemDiv.style.alignItems = 'center';
+    itemDiv.style.margin = '8px 0';
+    itemDiv.style.padding = '8px 12px';
+    itemDiv.style.borderRadius = '10px';
+    itemDiv.style.background = todo.completed ? '#e0f7fa' : '#fffbe0';
+    itemDiv.style.boxShadow = '0 1px 4px rgba(0,0,0,0.04)';
+    itemDiv.innerHTML = `
+      <div>
+        <b>${todo.title}</b><br>
+        <small>${todo.description ? todo.description : ''}</small>
+        <small>(優先度: ${todo.priority})</small>
+      </div>
+      <div>
+        <button class="edit-btn" data-id="${idx}">編輯</button>
+        <button class="delete-btn" data-id="${idx}" style="margin-left: 5px;">刪除</button>
+      </div>
+    `;
+    itemDiv.querySelector('.edit-btn').onclick = () => startEdit(idx, todo);
+    itemDiv.querySelector('.delete-btn').onclick = () => deleteTodo(idx);
+    if (todo.completed) {
+      doneList.appendChild(itemDiv);
+    } else {
+      undoneList.appendChild(itemDiv);
+    }
+  });
+}
+
+function fetchTodos() {
+  fetch(apiBase + '/todos')
+    .then(r => r.json())
+    .then(renderTodos);
+}
+
+form.onsubmit = function(e) {
+  e.preventDefault();
+  const title = form.named.value.trim();
+  const completed = form.state.value === 'true';
+  const description = form.querySelector('input[placeholder="無者可留空"]').value.trim();
+  const priority = parseInt(form.priority.value, 10);
+
+  if (!title) {
+    alert('請輸入名稱');
+    return;
+  }
+  if (isNaN(priority) || priority < 1) {
+      alert('優先度必須是正整數');
+      return;
+  }
+
+  const todo = {
+    title,
+    description,
+    completed,
+    priority
+  };
+  if (editingId !== null) {
+    // 編輯
+    fetch(apiBase + '/todo/' + editingId, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(todo)
+    }).then(r => {
+      if (!r.ok) throw new Error('更新失敗');
+      return r.json();
+    }).then(() => {
+      editingId = null;
+      form.reset();
+      form.querySelector('button[type="submit"]').textContent = '送出';
+      fetchTodos();
+    }).catch(() => alert('更新失敗'));
+  } else {
+    // 新增
+    fetch(apiBase + '/todos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(todo)
+    }).then(r => {
+      if (!r.ok) throw new Error('新增失敗');
+      return r.json();
+    }).then(() => {
+      form.reset();
+      fetchTodos();
+    }).catch(() => alert('新增失敗'));
+  }
+};
+
+function startEdit(idx, todo) {
+  form.named.value = todo.title;
+  form.state.value = todo.completed ? 'true' : 'false';
+  form.querySelector('input[placeholder="無者可留空"]').value = todo.description;
+  form.priority.value = todo.priority;
+  editingId = idx;
+  form.querySelector('button[type="submit"]').textContent = '更新';
+}
+
+function deleteTodo(idx) {
+    if (confirm('確定要刪除此待辦事項嗎？')) {
+        fetch(apiBase + '/todo/' + idx, {
+            method: 'DELETE'
+        }).then(function(r) {
+            if (!r.ok) throw new Error('刪除失敗');
+            fetchTodos();
+        }).catch(function() { alert('刪除失敗'); });
+    }
+}
+
+fetchTodos();
+    </script>
+  </body>
+</html>

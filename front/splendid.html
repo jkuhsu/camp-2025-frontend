@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Splendid Button</title>
+  <style>
+    :root {
+      --btn-bg: #4f46e5;
+      --btn-bg-hover: #4338ca;
+      --btn-bg-active: #3730a3;
+      --btn-text: #ffffff;
+      --btn-shadow: rgba(0, 0, 0, 0.2);
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background: #f9fafb;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .splendid-btn {
+      padding: 0.75em 1.5em;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--btn-text);
+      background-color: var(--btn-bg);
+      border: none;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 10px var(--btn-shadow);
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .splendid-btn:hover {
+      background-color: var(--btn-bg-hover);
+      transform: scale(1.04);
+      box-shadow: 0 6px 14px var(--btn-shadow);
+    }
+
+    .splendid-btn:active {
+      background-color: var(--btn-bg-active);
+      transform: scale(0.98);
+    }
+
+    .splendid-btn:focus {
+      outline: 3px solid #c7d2fe;
+      outline-offset: 3px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --btn-bg: #6366f1;
+        --btn-bg-hover: #818cf8;
+        --btn-bg-active: #4f46e5;
+        --btn-text: #f9fafb;
+        --btn-shadow: rgba(0, 0, 0, 0.5);
+      }
+
+      body {
+        background: #111827;
+      }
+    }
+  </style>
+</head>
+<body>
+  <button class="splendid-btn">Click Me</button>
+</body>
+</html>
